@@ -1,0 +1,47 @@
+# Git metadata
+.git
+.gitignore
+.github/
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+ENV/
+
+# Local environment and logs
+.env
+.env.*
+*.log
+
+# Editor and OS files
+.vscode/
+.ipynb_checkpoints/
+.DS_Store
+Thumbs.db
+
+# Local build/test artifacts
+build/
+dist/
+*.egg-info/
+.coverage
+.coverage.*
+htmlcov/
+
+# Large local data files not needed in the image
+*.csv
+*.parquet
+*.feather
+*.pkl
+*.npy
+*.npz
+*.sqlite3
+caselaw_xml/
+
+# Docker metadata
+.dockerignore
+Dockerfile

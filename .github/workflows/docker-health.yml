@@ -1,0 +1,28 @@
+name: Webapp Docker Health Check
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  docker-health:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+            persist-credentials: false
+
+      - name: Build and start container, wait for healthy status
+        run: docker compose -f .github/docker-compose.ci.yml up --build --wait --wait-timeout 180
+
+      - name: Show logs and clean up
+        if: always()
+        run: |
+          docker compose -f .github/docker-compose.ci.yml logs || true
+          docker compose -f .github/docker-compose.ci.yml down --volumes >/dev/null 2>&1 || true
+

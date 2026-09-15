@@ -11,7 +11,7 @@ from Citizens Advice, so that results can be understood by non-lawyers.
 
 > **This is the BETA prototype**, the second iteration in the project, intended
 > for deployment. It builds on the earlier
-> ALPHA prototype (deployed at **(https://research.caselaw.nationalarchives.gov.uk)**), and found on case-law-semantic-alpha repo. 
+> ALPHA prototype (deployed at **(https://research.caselaw.nationalarchives.gov.uk)**), and found on case-law-semantic-alpha repo.
 
 
 ---
@@ -27,11 +27,112 @@ script (`beta_app.py`):
 2. **`upsert`** — Upload the saved vectors to the vector database.
 3. **`search`** — Launch a Streamlit web interface for semantic search.
 
+### Data preparation and upload
+
+Run `embed` and `upsert` from a development or administration environment,
+not from the deployed web application. From the repository root:
+
 ```bash
-python beta_app.py embed     # parse + embed + tag
-python beta_app.py upsert    # upload vectors to the index
-streamlit run beta_app.py    # launch the search UI
+python3.13 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 ```
+
+Generate the Citizens Advice concept embeddings when `ca_terms_all.csv`
+changes:
+
+```bash
+python create_ca_embeddings.py
+```
+
+The current pipeline expects judgment XML files in `./caselaw_xml`, concept
+embeddings at `./beta-app-folder/ca_terms_all.pkl`, and writes generated case
+vectors to `./caselaw_vectors_2026.pkl`. Prepare those paths, then run:
+
+```bash
+mkdir -p beta-app-folder
+cp ca_terms_all.pkl beta-app-folder/ca_terms_all.pkl
+python beta_app.py embed
+```
+
+Uploading changes remote data in the configured S3 Vectors index. Configure
+AWS credentials with write access through the standard AWS credential chain,
+then run:
+
+```bash
+python beta_app.py upsert
+```
+
+The upsert is resumable. If an AWS SSO session expires, log in again and rerun
+the same command to continue from its checkpoint.
+
+### Running the read-only web application with Docker
+
+> **Web application image only:** this image runs the read-only Streamlit
+> search application as a non-root user. The application directory is not
+> writable at runtime, and the image does not run `embed`, `upsert`, or any
+> other data-loading operation. Use query-only AWS permissions for deployment;
+> run data preparation and uploads separately as described above.
+
+Build the image from the repository root:
+
+```bash
+docker build -t caselaw-semantic-beta:latest .
+```
+
+Start the application in the background:
+
+```bash
+docker run --rm --name caselaw-semantic-beta -p 8501:8501 \
+    -d \
+    caselaw-semantic-beta:latest
+```
+
+The application will be accessible at `http://localhost:8501/beta/`.
+
+To stop a container started in the background, use:
+
+```bash
+docker stop caselaw-semantic-beta
+```
+
+The Dockerfile sets `BASE_URL_PATH=beta` by default. To use a different base path, override it when starting the container and use the matching URL:
+
+```bash
+docker run --rm --name caselaw-semantic-beta -p 8501:8501 \
+    -e BASE_URL_PATH=case-search \
+    caselaw-semantic-beta:latest
+```
+
+This makes the application available at `http://localhost:8501/case-search/`.
+
+### Container health check
+
+The image defines a Docker `HEALTHCHECK` that polls Streamlit's own health
+endpoint (`http://localhost:8501/${BASE_URL_PATH}/_stcore/health`) every 30
+seconds. Check a running container's status with:
+
+```bash
+docker inspect --format '{{.State.Health.Status}}' caselaw-semantic-beta
+```
+
+This only confirms the Streamlit process is up and responding — it does not
+exercise the embedding model or the S3 Vectors query path.
+
+### CI: automated build and health check
+
+[`.github/workflows/docker-health.yml`](.github/workflows/docker-health.yml)
+builds the image and starts it on every push and pull request, using
+[`.github/docker-compose.ci.yml`](.github/docker-compose.ci.yml) so that
+`docker compose up --wait` blocks the job until the container reports
+healthy (or fails the job if it doesn't, within a 180-second timeout). You
+can run the same check locally:
+
+```bash
+docker compose -f .github/docker-compose.ci.yml up --build --wait --wait-timeout 180
+docker compose -f .github/docker-compose.ci.yml down
+```
+
 ---
 
 ## Requirements
@@ -52,10 +153,12 @@ streamlit run beta_app.py    # launch the search UI
 | `ca_terms_all.csv` | Curated Citizens Advice concepts (title, definition, source, area) |
 | `requirements.txt` | Python dependencies |
 | `.gitignore` | Excludes vectors, corpora, and secrets |
+| `.github/workflows/docker-health.yml` | CI: builds the image and checks it becomes healthy |
+| `.github/docker-compose.ci.yml` | Compose file used by the CI health check (and runnable locally) |
 
 **Not included in the repo** (too large / regenerable / not for version control):
 
-- The XML judgment corpus (`caselaw_fam_xml/`)
+- The XML judgment corpus (`caselaw_xml/`)
 - Embedded vector files (`*.pkl`) — these are large (~1GB+) and regenerable
 - Any credentials or `.env` files
 

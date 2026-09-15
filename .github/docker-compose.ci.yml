@@ -1,0 +1,6 @@
+services:
+  app:
+    build: ..
+    image: caselaw-semantic-beta:ci
+    ports:
+      - "8501:8501"
