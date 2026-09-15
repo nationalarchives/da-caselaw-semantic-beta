@@ -8,6 +8,7 @@ sentence-transformers>=5.0
 scikit-learn>=1.7
 streamlit>=1.50
 numpy>=2.0
+torchvision>=0.20
 
 # Vector store: AWS S3 Vectors, via boto3.
 # NOTE: authentication uses the standard AWS credential chain.
