@@ -88,7 +88,7 @@ docker run --rm --name caselaw-semantic-beta -p 8501:8501 \
     caselaw-semantic-beta:latest
 ```
 
-The application will be accessible at `http://localhost:8501/beta/`. The container exposes Streamlit's health endpoint at `http://localhost:8501/beta/_stcore/health`.
+The application will be accessible at `http://localhost:8501/beta/`.
 
 To stop a container started in the background, use:
 
@@ -105,6 +105,33 @@ docker run --rm --name caselaw-semantic-beta -p 8501:8501 \
 ```
 
 This makes the application available at `http://localhost:8501/case-search/`.
+
+### Container health check
+
+The image defines a Docker `HEALTHCHECK` that polls Streamlit's own health
+endpoint (`http://localhost:8501/${BASE_URL_PATH}/_stcore/health`) every 30
+seconds. Check a running container's status with:
+
+```bash
+docker inspect --format '{{.State.Health.Status}}' caselaw-semantic-beta
+```
+
+This only confirms the Streamlit process is up and responding — it does not
+exercise the embedding model or the S3 Vectors query path.
+
+### CI: automated build and health check
+
+[`.github/workflows/docker-health.yml`](.github/workflows/docker-health.yml)
+builds the image and starts it on every push and pull request, using
+[`.github/docker-compose.ci.yml`](.github/docker-compose.ci.yml) so that
+`docker compose up --wait` blocks the job until the container reports
+healthy (or fails the job if it doesn't, within a 180-second timeout). You
+can run the same check locally:
+
+```bash
+docker compose -f .github/docker-compose.ci.yml up --build --wait --wait-timeout 180
+docker compose -f .github/docker-compose.ci.yml down
+```
 
 ---
 
@@ -126,6 +153,8 @@ This makes the application available at `http://localhost:8501/case-search/`.
 | `ca_terms_all.csv` | Curated Citizens Advice concepts (title, definition, source, area) |
 | `requirements.txt` | Python dependencies |
 | `.gitignore` | Excludes vectors, corpora, and secrets |
+| `.github/workflows/docker-health.yml` | CI: builds the image and checks it becomes healthy |
+| `.github/docker-compose.ci.yml` | Compose file used by the CI health check (and runnable locally) |
 
 **Not included in the repo** (too large / regenerable / not for version control):
 
