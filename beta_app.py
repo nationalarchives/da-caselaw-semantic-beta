@@ -511,8 +511,11 @@ def streamlit_ui():
     # Load resources
     @st.cache_resource
     def load_model():
-        return SentenceTransformer(EMBEDDING_MODEL_NAME)
-    
+        # Webapp mode must never fetch the model over the network — it's
+        # baked into the image at build time. Fail fast if it's missing
+        # rather than silently falling back to a download attempt.
+        return SentenceTransformer(EMBEDDING_MODEL_NAME, local_files_only=True)
+
     @st.cache_resource
     def load_ca_terms():
         try:
