@@ -33,6 +33,8 @@ RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTr
 
 COPY . .
 
+RUN python create_ca_embeddings.py
+
 USER appuser:appgroup
 
 EXPOSE 8501

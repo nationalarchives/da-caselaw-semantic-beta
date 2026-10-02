@@ -34,6 +34,7 @@ htmlcov/
 
 # Large local data files not needed in the image
 *.csv
+ !ca_terms_all.csv
 *.parquet
 *.feather
 *.pkl
