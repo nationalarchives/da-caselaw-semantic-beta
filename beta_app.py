@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-FCL Semantic Search Prototype BETA - Family Law
+FCL Semantic Search Prototype BETA
 
-A semantic search system for UK Family Division case law with Citizens Advice tagging
+A semantic search system for England and Wales case law with Citizens Advice tagging
 
 Requirements:
     - XML files in ./caselaw_fam_xml/
@@ -30,7 +30,7 @@ import streamlit as st
 
 XML_DIR = "./caselaw_xml"
 VECTORS_PATH = "./caselaw_vectors_2026.pkl"
-CA_TERMS_PATH = "./beta-app-folder/ca_terms_all.pkl"
+CA_TERMS_PATH = "./ca_terms_all.pkl"
 EMBEDDING_MODEL_NAME = "all-MiniLM-L6-v2"
 
 # S3 Vectors configuration
@@ -505,7 +505,7 @@ def streamlit_ui():
     """Main Streamlit search interface."""
     st.set_page_config(page_title="Lost for Words BETA: case law case search", page_icon="⚖️", layout="wide")
     
-    st.title("⚖️ Lost for Words BETA: family law case search")
+    st.title("⚖️ Lost for Words BETA: semantic search for case law")
     st.markdown("Semantic search prototype for Find Case Law with plain English legal concept tags from Citizens Advice")
     
     # Load resources
